@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form id="deleteForm" action="{{ url_for('delete_selected_days') }}" method="POST">
+    <div class="flex flex-col gap-6">
+        <div>
+            <h1 class="text-2xl font-bold text-white mb-2">Vidéos</h1>
+
+            <div class="flex gap-2 mb-3">
+                <a href="{{ url_for('delete_all') }}" id="btnDeleteAll"
+                    onclick="return confirm('Supprimer définitivement TOUTES les vidéos ?')"
+                    class="flex-1 bg-red-900 bg-opacity-20 border border-red-800 text-red-400 text-base py-2 rounded-lg font-bold text-center">
+                    Tout supprimer
+                </a>
+
+                <button type="button" onclick="toggleSelectionMode()" id="btnSelect"
+                    class="flex-1 bg-gray-800 border border-gray-700 text-gray-400 text-base py-2 rounded-lg font-bold">
+                    Sélectionner
+                </button>
+            </div>
+
+            <button type="submit" id="btnDeleteSelected"
+                class="hidden w-full bg-red-900 bg-opacity-20 border border-red-800 text-red-400 text-base py-3 rounded-lg font-bold">
+                Supprimer les jours sélectionnés
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-3">
+            {% for day_id in sorted_day_ids %}
+            <div class="relative group">
+                <input type="checkbox" name="days" value="{{ day_id }}"
+                    class="day-checkbox hidden absolute left-4 top-5 z-10 w-6 h-6 rounded-full border-gray-600 bg-gray-700 text-blue-500 focus:ring-0">
+
+                <details
+                    class="day-accordion bg-gray-800 border border-gray-700 rounded-2xl overflow-hidden shadow-lg transition-all">
+                    <summary class="list-none p-4 flex justify-between items-center cursor-pointer select-none">
+                        <span class="day-label font-medium text-white transition-all">{{ grouped_videos[day_id].label
+                            }}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="bg-gray-900 text-gray-400 text-base px-2 py-1 rounded-full">
+                                {{ grouped_videos[day_id].files|length }}
+                            </span>
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    </summary>
+
+                    <div class="p-3 border-t border-gray-700 bg-gray-900 bg-opacity-40 flex flex-col gap-2">
+                        {% for video in grouped_videos[day_id].files|sort(reverse=True) %}
+                        <details class="group/video border border-gray-700 rounded-xl bg-gray-800">
+                            <summary class="list-none p-3 flex justify-between items-center cursor-pointer">
+                                <span class="text-xs text-gray-300 truncate">{{ video.split('_')[1] }}</span>
+                                <svg class="w-3 h-3 text-gray-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </summary>
+                            <div
+                                class="p-3 flex justify-around items-center border-t border-gray-700 bg-gray-800 rounded-b-xl">
+                                <a href="{{ url_for('view_video', filename=video) }}"
+                                    class="p-3 bg-blue-500 bg-opacity-10 text-blue-400 rounded-full">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                                        </path>
+                                    </svg>
+                                </a>
+                                <a href="{{ url_for('download_video', filename=video) }}"
+                                    class="p-3 bg-green-500 bg-opacity-10 text-green-400 rounded-full">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                    </svg>
+                                </a>
+                                <a href="{{ url_for('delete_video', filename=video) }}"
+                                    onclick="return confirm('Supprimer ?')"
+                                    class="p-3 bg-red-500 bg-opacity-10 text-red-400 rounded-full">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                        </path>
+                                    </svg>
+                                </a>
+                            </div>
+                        </details>
+                        {% endfor %}
+                    </div>
+                </details>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</form>
+
+<script>
+    let isSelectionMode = false;
+
+    function toggleSelectionMode() {
+        isSelectionMode = !isSelectionMode;
+
+        const btnDeleteAll = document.getElementById('btnDeleteAll');
+        const deleteBtn = document.getElementById('btnDeleteSelected');
+        const selectBtn = document.getElementById('btnSelect');
+        const checkboxes = document.querySelectorAll('.day-checkbox');
+        const labels = document.querySelectorAll('.day-label');
+
+        checkboxes.forEach(cb => cb.classList.toggle('hidden'));
+        labels.forEach(lb => lb.classList.toggle('ml-8'));
+
+        if (isSelectionMode) {
+            btnDeleteAll.style.pointerEvents = 'none';
+            btnDeleteAll.classList.replace('bg-opacity-20', 'bg-opacity-5');
+            btnDeleteAll.classList.replace('text-red-400', 'text-gray-600');
+            btnDeleteAll.classList.replace('border-red-800', 'border-gray-800');
+
+            deleteBtn.classList.remove('hidden');
+            selectBtn.innerText = "Annuler";
+            selectBtn.classList.replace('bg-gray-800', 'bg-blue-900');
+        } else {
+            btnDeleteAll.style.pointerEvents = 'auto';
+            btnDeleteAll.classList.replace('bg-opacity-5', 'bg-opacity-20');
+            btnDeleteAll.classList.replace('text-gray-600', 'text-red-400');
+            btnDeleteAll.classList.replace('border-gray-800', 'border-red-800');
+
+            deleteBtn.classList.add('hidden');
+            selectBtn.innerText = "Sélectionner";
+            selectBtn.classList.replace('bg-blue-900', 'bg-gray-800');
+
+            checkboxes.forEach(cb => cb.checked = false);
+        }
+    }
+</script>
+
+<style>
+    summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .day-checkbox:checked+.day-accordion {
+        border-color: #3b82f6;
+        background-color: #1e293b;
+    }
+</style>
+{% endblock %}
