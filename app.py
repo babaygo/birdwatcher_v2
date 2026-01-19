@@ -35,7 +35,8 @@ def get_cpu_temp():
         with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
             temp = float(f.read()) / 1000.0
             return round(temp, 1)
-    except:
+    except Exception as e:
+        print(f"Erreur get temp CPU : {e}")
         return 0.0
 
 
@@ -79,7 +80,7 @@ def delete_all():
 
 @app.route("/video/delete-days", methods=["POST"])
 def delete_selected_days():
-    selected_days = request.form.getlist("days")  # Récupère les IDs cochés
+    selected_days = request.form.getlist("days")
     video_dir = os.path.join(os.path.dirname(__file__), "videos")
 
     for day_id in selected_days:
@@ -105,13 +106,23 @@ def list_videos():
             if day_id not in grouped_videos:
                 grouped_videos[day_id] = {"label": date_readable, "files": []}
             grouped_videos[day_id]["files"].append(f)
-        except:
+        except Exception as e:
+            print(f"Erreur groupements des vidéos par jour : {e}")
             continue
 
     sorted_day_ids = sorted(grouped_videos.keys(), reverse=True)
     return render_template(
         "videos.html", grouped_videos=grouped_videos, sorted_day_ids=sorted_day_ids
     )
+
+
+@app.route("/api/system_stats")
+def system_stats():
+    return {
+        "battery": get_battery_datas(),
+        "temp": get_cpu_temp(),
+        "disk": get_disk_info(),
+    }
 
 
 @app.route("/settings")

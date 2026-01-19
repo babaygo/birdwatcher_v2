@@ -10,17 +10,23 @@
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <p class="text-gray-500 text-base font-semibold">Température CPU</p>
-                <p class="text-lg font-medium">{{ temp }}°C</p>
+                <p class="text-lg font-medium"><span id="cpu-temp">{{ temp }}</span>°C</p>
             </div>
             <div>
                 <p class="text-gray-500 text-base font-semibold">Batterie</p>
-                <p class="text-lg font-medium">{{ battery.percent }}% ({{ battery.voltage }}V {{ battery.current }}A {{
-                    battery.power }}W)</p>
+                <p class="text-lg font-medium"><span id="bat-percent">{{ battery.percent }}</span>%
+                    (<span id="bat-voltage">{{ battery.voltage }}</span>V
+                    <span id="bat-current">{{ battery.current }}</span>A
+                    <span id="bat-power">{{ battery.power }}</span>W)
+                </p>
             </div>
             <div class="col-span-2">
                 <div class="flex justify-between items-end mb-1">
                     <p class="text-gray-500 text-base font-semibold">Stockage</p>
-                    <p class="text-gray-400 text-base">{{ disk.used_gb }}Go / {{ disk.total_gb }}Go</p>
+                    <p class="text-gray-400 text-base">
+                        <span id="disk-used">{{ disk.used_gb }}</span>Go /
+                        <span id="disk-total">{{ disk.total_gb }}</span>Go
+                    </p>
                 </div>
 
                 <div class="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
@@ -29,7 +35,9 @@
                     </div>
                 </div>
 
-                <p class="text-base text-gray-600 mt-1 italic text-right">{{ disk.percent }}% utilisé</p>
+                <p class="text-base text-gray-600 mt-1 italic text-right">
+                    <span id="disk-percent">{{ disk.percent }}</span>% utilisé
+                </p>
             </div>
         </div>
     </div>
@@ -61,7 +69,8 @@
     </div>
 
     <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-lg">
-        <p class="text-xs text-gray-500 mb-4">Éteignez proprement la Raspberry avant de retirer la batterie Li-Po pour protéger vos fichiers.</p>
+        <p class="text-xs text-gray-500 mb-4">Éteignez proprement la Raspberry avant de retirer la batterie Li-Po pour
+            protéger vos fichiers.</p>
         <a href="/shutdown" onclick="return confirm('Confirmer l\'extinction ?')"
             class="block w-full bg-red-900 bg-opacity-30 border border-red-800 text-red-400 text-center py-3 rounded-xl font-semibold active:bg-red-800 active:text-white transition-all">
             Éteindre la Raspberry
@@ -69,4 +78,55 @@
     </div>
 
 </div>
+
+<script>
+    let statsInterval = null;
+
+    function updateStats() {
+        fetch('/api/system_stats')
+            .then(response => response.json())
+            .then(data => {
+                // Mise à jour Batterie
+                document.getElementById('bat-percent').innerText = data.battery.percent;
+                document.getElementById('bat-voltage').innerText = data.battery.voltage;
+                document.getElementById('bat-current').innerText = data.battery.current;
+                document.getElementById('bat-power').innerText = data.battery.power;
+
+                // Mise à jour Température
+                document.getElementById('cpu-temp').innerText = data.temp;
+
+                // Mise à jour Disque
+                document.getElementById('disk-percent').innerText = data.disk.percent;
+                document.getElementById('disk-disk-used').innerText = data.disk.used_gb;
+                document.getElementById('disk-disk-total').innerText = data.disk.total_gb;
+
+            }).catch(error => console.error('Erreur stats:', error));
+    }
+
+    function startUpdating() {
+        if (!statsInterval) {
+            updateStats();
+            statsInterval = setInterval(updateStats, 6000);
+            console.log("Flux de données : ACTIF");
+        }
+    }
+
+    function stopUpdating() {
+        if (statsInterval) {
+            clearInterval(statsInterval);
+            statsInterval = null;
+            console.log("Flux de données : VEILLE");
+        }
+    }
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            stopUpdating();
+        } else {
+            startUpdating();
+        }
+    });
+
+    startUpdating();
+</script>
 {% endblock %}
