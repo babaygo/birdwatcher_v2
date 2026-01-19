@@ -1,9 +1,122 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-white">BirdWatcher</h1>
-    <span>Batterie : {{ battery.percent }}%</span>
+<div class="flex justify-between items-center mb-8 space-x-2">
+    <h1 class="text-3xl font-extrabold text-white tracking-tight">BirdWatcher</h1>
+
+    <div class="flex items-center space-x-2 bg-gray-800 px-4 py-2 rounded-full border border-gray-700">
+        <span class="relative flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+        </span>
+        <span class="text-xs font-bold text-gray-200 uppercase tracking-widest">Système Actif</span>
+    </div>
 </div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-gray-800 p-5 rounded-2xl border border-gray-700 shadow-lg">
+        <div class="flex justify-between items-start mb-4">
+            <div class="p-2 bg-indigo-500/10 rounded-lg">
+                <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
+                    </path>
+                </svg>
+            </div>
+            <span class="text-3xl font-bold text-white" id="video-count">{{ video_count }}</span>
+        </div>
+        <p class="text-gray-500 text-xs uppercase font-bold">Captures du jour</p>
+        <p class="text-[10px] text-indigo-400/60 mt-1 italic">Basé sur les dernières 24h</p>
+    </div>
+
+    <div class="bg-gray-800 p-5 rounded-2xl border border-gray-700 shadow-lg">
+        <div class="flex justify-between items-start mb-4">
+            <div class="p-2 bg-blue-500/10 rounded-lg">
+                <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+            </div>
+            <div class="text-2xl font-bold text-white">
+                <span id="bat-percent">{{ battery.percent }}</span>%
+            </div>
+        </div>
+        <p class="text-gray-500 text-xs uppercase font-bold mb-2">Batterie</p>
+        <div class="w-full bg-gray-700 rounded-full h-2">
+            <div id="bat-bar" class="bg-blue-500 h-2 rounded-full transition-all duration-1000"
+                style="width: {{ battery.percent }}%"></div>
+        </div>
+    </div>
+
+    <div class="bg-gray-800 p-5 rounded-2xl border border-gray-700 shadow-lg">
+        <div class="flex justify-between items-start mb-4">
+            <div class="p-2 bg-purple-500/10 rounded-lg">
+                <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4">
+                    </path>
+                </svg>
+            </div>
+            <div class="text-2xl font-bold text-white">
+                <span id="disk-percent">{{ disk.percent }}</span>%
+            </div>
+        </div>
+        <p class="text-gray-500 text-xs uppercase font-bold mb-2">Espace SD utilisé</p>
+        <div class="w-full bg-gray-700 rounded-full h-2">
+            <div id="disk-bar" class="bg-purple-500 h-2 rounded-full transition-all duration-1000"
+                style="width: {{ disk.percent }}%"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let statsInterval = null;
+
+    function updateStats() {
+        fetch('/api/system_stats')
+            .then(response => response.json())
+            .then(data => {
+                const videoCountEl = document.getElementById('video-count');
+
+                // Mise à jour nb vidéos 24h
+                if (videoCountEl) {
+                    videoCountEl.innerText = data.video_count;
+                }
+
+                // Mise à jour Batterie
+                document.getElementById('bat-percent').innerText = data.battery.percent;
+
+                // Mise à jour Disque
+                document.getElementById('disk-percent').innerText = data.disk.percent;
+
+            }).catch(error => console.error('Erreur stats:', error));
+    }
+
+    function startUpdating() {
+        if (!statsInterval) {
+            updateStats();
+            statsInterval = setInterval(updateStats, 6000);
+            console.log("Flux de données : ACTIF");
+        }
+    }
+
+    function stopUpdating() {
+        if (statsInterval) {
+            clearInterval(statsInterval);
+            statsInterval = null;
+            console.log("Flux de données : VEILLE");
+        }
+    }
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            stopUpdating();
+        } else {
+            startUpdating();
+        }
+    });
+
+    startUpdating();
+</script>
 
 {% endblock %}

@@ -11,7 +11,7 @@ from flask import (
     send_from_directory,
     request,
     redirect,
-    url_for
+    url_for,
 )
 
 locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
@@ -25,6 +25,22 @@ DEFAULT_CONFIG = {"cleanup_days": DEFAULT_CLEANUP_DAYS, "time_clip": DEFAULT_TIM
 CONFIG_FILE = "config.json"
 
 os.makedirs(VIDEO_DIR, exist_ok=True)
+
+
+def get_video_count_today():
+    if not os.path.exists(VIDEO_DIR):
+        return 0
+
+    today_str = datetime.now().strftime("%Y%m%d")
+
+    count = len(
+        [
+            f
+            for f in os.listdir(VIDEO_DIR)
+            if f.startswith(f"cap_{today_str}") and f.endswith(".mp4")
+        ]
+    )
+    return count
 
 
 def get_disk_info():
@@ -85,7 +101,10 @@ def auto_cleanup_files():
 @app.route("/")
 def index():
     battery_datas = get_battery_datas()
-    return render_template("index.html", battery=battery_datas)
+    temp = get_cpu_temp()
+    disk = get_disk_info()
+
+    return render_template("index.html", battery=battery_datas, temp=temp, disk=disk)
 
 
 @app.route("/video/view/<filename>")
@@ -200,6 +219,7 @@ def system_stats():
         "battery": get_battery_datas(),
         "temp": get_cpu_temp(),
         "disk": get_disk_info(),
+        "video_count": get_video_count_today()
     }
 
 
