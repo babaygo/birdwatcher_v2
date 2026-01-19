@@ -1,6 +1,8 @@
 import os
 import shutil
 import locale
+import time
+import json
 from datetime import datetime
 from power import get_battery_datas
 from flask import (
@@ -15,7 +17,10 @@ from flask import (
 locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
 
 app = Flask(__name__)
+
 VIDEO_DIR = os.path.join(os.path.dirname(__file__), "videos")
+CONFIG_FILE = "config.json"
+
 os.makedirs(VIDEO_DIR, exist_ok=True)
 
 
@@ -38,6 +43,37 @@ def get_cpu_temp():
     except Exception as e:
         print(f"Erreur get temp CPU : {e}")
         return 0.0
+
+
+def get_config():
+    if not os.path.exists(CONFIG_FILE):
+        return {"cleanup_days": 7}
+    with open(CONFIG_FILE, "r") as f:
+        return json.load(f)
+
+
+def save_config(config):
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(config, f)
+
+
+def auto_cleanup_files():
+    config = get_config()
+    days = config.get("cleanup_days", 7)
+
+    if days <= 0:
+        return
+
+    now = time.time()
+    cutoff = now - (days * 86400)
+
+    video_dir = "videos"
+    if os.path.exists(video_dir):
+        for filename in os.listdir(video_dir):
+            if filename.endswith(".mp4"):
+                file_path = os.path.join(video_dir, filename)
+                if os.path.isfile(file_path) and os.path.getmtime(file_path) < cutoff:
+                    os.remove(file_path)
 
 
 @app.route("/")
@@ -116,6 +152,42 @@ def list_videos():
     )
 
 
+@app.route("/api/config/cleanup", methods=["POST"])
+def set_cleanup_config():
+    try:
+        data = request.get_json()
+        if not data:
+            return {"status": "error", "message": "No data received"}, 400
+
+        config = get_config()
+        days = int(data.get("cleanup_days", 7))
+        config["cleanup_days"] = max(1, min(99, days))
+        print("La config ", config)
+
+        save_config(config)
+        return {"status": "success", "cleanup_days": config["cleanup_days"]}
+    except Exception as e:
+        return {"status": "error", "message": f"Erreur update cleanup_days : {e}"}, 500
+
+
+@app.route("/api/config/timeclip", methods=["POST"])
+def set_timeclip_config():
+    try:
+        data = request.get_json()
+        if not data:
+            return {"status": "error", "message": "No data received"}, 400
+
+        config = get_config()
+        days = int(data.get("time_clip", 7))
+        config["time_clip"] = max(1, min(120, days))
+        print("La config ", config)
+
+        save_config(config)
+        return {"status": "success", "time_clip": config["time_clip"]}
+    except Exception as e:
+        return {"status": "error", "message": f"Erreur update time_clip : {e}"}, 500
+
+
 @app.route("/api/system_stats")
 def system_stats():
     return {
@@ -127,11 +199,14 @@ def system_stats():
 
 @app.route("/settings")
 def settings():
+    config = get_config()
     battery_datas = get_battery_datas()
     temp = get_cpu_temp()
     disk = get_disk_info()
 
-    return render_template("settings.html", battery=battery_datas, temp=temp, disk=disk)
+    return render_template(
+        "settings.html", config=config, battery=battery_datas, temp=temp, disk=disk
+    )
 
 
 @app.route("/videos/<filename>")

@@ -45,25 +45,25 @@
     <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4 shadow-lg">
         <h2 class="text-base font-bold text-purple-400 uppercase tracking-wider mb-3">Vidéos</h2>
         <div class="space-y-4">
-            <div>
-                <label class="block text-xs text-gray-500 mb-1">Durée d'enregistrement d'une vidéo (en secondes)</label>
-                <select
-                    class="w-full bg-gray-900 border border-gray-600 rounded-lg p-2 text-white outline-none focus:border-purple-500">
-                    <option value="30">30 secondes</option>
-                    <option value="45">45 secondes</option>
-                    <option value="60">60 secondes</option>
-                    <option value="75">75 secondes</option>
-                </select>
+            <div class="flex flex-col space-y-3">
+                <label class="text-gray-500 text-base font-semibold">Paramètres enregistrement vidéo</label>
+                <div class="w-full flex items-center space-x-2">
+                    <span class="text-sm">Durée d'enregistrement d'une vidéo (max: 120):</span>
+                    <input type="number" id="time-clip" value="{{ config.time_clip }}" min="1" max="120"
+                        class="w-16 bg-gray-900 border border-gray-600 text-purple-400 text-center font-semibold py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
+                    <span class="text-sm">Secondes</span>
+                </div>
             </div>
             <div class="flex items-center justify-between">
-                <div class="flex flex-col">
-                    <span class="text-sm mb-2">Nettoyage automatique</span>
-                    <span class="text-xs text-mute">Suppresion automatique des vidéos de plus 7 jours</span>
+                <div class="flex flex-col space-y-3">
+                    <span class="text-gray-500 text-base font-semibold">Nettoyage automatique</span>
+                    <div class="w-full flex items-center space-x-2">
+                        <span class="text-sm">Supprimer les vidéos après</span>
+                        <input type="number" id="cleanup-days" value="{{ config.cleanup_days }}" min="1" max="99"
+                            class="w-16 bg-gray-900 border border-gray-600 text-purple-400 text-center font-semibold py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
+                        <span class="text-sm">Jours</span>
+                    </div>
                 </div>
-
-                <button class="w-10 h-5 bg-purple-600 rounded-full relative">
-                    <div class="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div>
-                </button>
             </div>
         </div>
     </div>
@@ -97,8 +97,8 @@
 
                 // Mise à jour Disque
                 document.getElementById('disk-percent').innerText = data.disk.percent;
-                document.getElementById('disk-disk-used').innerText = data.disk.used_gb;
-                document.getElementById('disk-disk-total').innerText = data.disk.total_gb;
+                document.getElementById('disk-used').innerText = data.disk.used_gb;
+                document.getElementById('disk-total').innerText = data.disk.total_gb;
 
             }).catch(error => console.error('Erreur stats:', error));
     }
@@ -128,5 +128,48 @@
     });
 
     startUpdating();
+</script>
+
+<script>
+    const cleanupInput = document.getElementById('cleanup-days');
+    const timeclipInput = document.getElementById('time-clip');
+
+    cleanupInput.addEventListener('change', function () {
+        let val = parseInt(this.value);
+
+        if (isNaN(val) || val < 1) val = 1;
+        if (val > 99) val = 99;
+        this.value = val;
+
+        fetch('/api/config/cleanup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cleanup_days: val })
+        })
+            .then(res => res.json())
+            .then(data => {
+                console.log("Configuration mise à jour :", data.cleanup_days);
+            })
+            .catch(err => console.error("Erreur de sauvegarde :", err));
+    });
+
+    timeclipInput.addEventListener('change', function () {
+        let val = parseInt(this.value);
+
+        if (isNaN(val) || val < 1) val = 1;
+        if (val > 120) val = 120;
+        this.value = val;
+
+        fetch('/api/config/timeclip', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ time_clip: val })
+        })
+            .then(res => res.json())
+            .then(data => {
+                console.log("Configuration mise à jour :", data.time_clip);
+            })
+            .catch(err => console.error("Erreur de sauvegarde :", err));
+    });
 </script>
 {% endblock %}
