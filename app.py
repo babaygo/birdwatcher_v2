@@ -178,8 +178,8 @@ def set_timeclip_config():
             return {"status": "error", "message": "No data received"}, 400
 
         config = get_config()
-        days = int(data.get("time_clip", 7))
-        config["time_clip"] = max(1, min(120, days))
+        seconds = int(data.get("time_clip", 60))
+        config["time_clip"] = max(1, min(120, seconds))
         print("La config ", config)
 
         save_config(config)
