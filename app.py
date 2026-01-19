@@ -11,7 +11,7 @@ from flask import (
     send_from_directory,
     request,
     redirect,
-    url_for,
+    url_for
 )
 
 locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
@@ -19,6 +19,9 @@ locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
 app = Flask(__name__)
 
 VIDEO_DIR = os.path.join(os.path.dirname(__file__), "videos")
+DEFAULT_CLEANUP_DAYS = 7
+DEFAULT_TIMECLIP = 60
+DEFAULT_CONFIG = {"cleanup_days": DEFAULT_CLEANUP_DAYS, "time_clip": DEFAULT_TIMECLIP}
 CONFIG_FILE = "config.json"
 
 os.makedirs(VIDEO_DIR, exist_ok=True)
@@ -47,9 +50,13 @@ def get_cpu_temp():
 
 def get_config():
     if not os.path.exists(CONFIG_FILE):
-        return {"cleanup_days": 7}
-    with open(CONFIG_FILE, "r") as f:
-        return json.load(f)
+        save_config(DEFAULT_CONFIG)
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"Erreur ouverture config.json : {e}")
+        return DEFAULT_CONFIG
 
 
 def save_config(config):
@@ -59,7 +66,7 @@ def save_config(config):
 
 def auto_cleanup_files():
     config = get_config()
-    days = config.get("cleanup_days", 7)
+    days = config.get("cleanup_days", DEFAULT_CLEANUP_DAYS)
 
     if days <= 0:
         return
@@ -67,11 +74,10 @@ def auto_cleanup_files():
     now = time.time()
     cutoff = now - (days * 86400)
 
-    video_dir = "videos"
-    if os.path.exists(video_dir):
-        for filename in os.listdir(video_dir):
+    if os.path.exists(VIDEO_DIR):
+        for filename in os.listdir(VIDEO_DIR):
             if filename.endswith(".mp4"):
-                file_path = os.path.join(video_dir, filename)
+                file_path = os.path.join(VIDEO_DIR, filename)
                 if os.path.isfile(file_path) and os.path.getmtime(file_path) < cutoff:
                     os.remove(file_path)
 
@@ -160,7 +166,7 @@ def set_cleanup_config():
             return {"status": "error", "message": "No data received"}, 400
 
         config = get_config()
-        days = int(data.get("cleanup_days", 7))
+        days = int(data.get("cleanup_days", DEFAULT_CLEANUP_DAYS))
         config["cleanup_days"] = max(1, min(99, days))
         print("La config ", config)
 
@@ -178,7 +184,7 @@ def set_timeclip_config():
             return {"status": "error", "message": "No data received"}, 400
 
         config = get_config()
-        seconds = int(data.get("time_clip", 60))
+        seconds = int(data.get("time_clip", DEFAULT_TIMECLIP))
         config["time_clip"] = max(1, min(120, seconds))
         print("La config ", config)
 
@@ -215,4 +221,5 @@ def serve_video(filename):
 
 
 if __name__ == "__main__":
+    auto_cleanup_files()
     app.run(host="0.0.0.0", port=5000, debug=True)
