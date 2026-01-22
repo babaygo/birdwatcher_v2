@@ -32,8 +32,8 @@ net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 # Initialisation pi caméra 2
 picam2 = Picamera2()
 config = picam2.create_video_configuration(
-    main={"size": (1920, 1080), "format": "YUV420", "fps": 25},
-    lores={"size": (640, 480), "format": "YUV420", "fps": 25},
+    main={"size": (1920, 1080), "format": "XBGR8888"},
+    lores={"size": (640, 480), "format": "YUV420"},
 )
 picam2.configure(config)
 picam2.start()
