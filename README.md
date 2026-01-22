@@ -25,17 +25,40 @@ python3 -m venv env --system-site-packages
 source env/bin/activate
 ```
 
-3. Install Python dependencies:
+3. Configure Raspberry Pi interfaces:
+
+Enable the camera interface and I2C:
+```bash
+sudo raspi-config
+```
+
+Then:
+- Navigate to `Interface Options` → `Camera` and enable it
+- Navigate to `Interface Options` → `I2C` and enable it
+
+Alternatively, via command line:
+```bash
+# Enable camera
+sudo sed -i 's/^#dtoverlay=imx519/dtoverlay=imx519/' /boot/firmware/config.txt
+
+# Enable I2C
+sudo sed -i 's/^#dtparam=i2c_arm=on/dtparam=i2c_arm=on/' /boot/firmware/config.txt
+
+# Reboot to apply changes
+sudo reboot
+```
+
+4. Install Python dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Download the YOLOv8 model:
+5. Download the YOLOv8 model:
 ```bash
 # Download yolov8n.onnx and place it in the project root directory
 ```
 
-5. Run the application:
+6. Run the application:
 ```bash
 # For the Flask web interface:
 python3 app.py
