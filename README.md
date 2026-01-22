@@ -12,8 +12,34 @@ Components :
 - Capteur PIR HC-SR501 (Movements detector)
 
 Installation :
-git clone
+
+1. Clone the repository:
+```bash
+git clone https://github.com/babaygo/birdwatcher_v2.git
 cd birdwatcher_v2
-python3 venv env --system-site-packages
-pip install -r requirements. txt
-download yolov8n.onnx
+```
+
+2. Create a virtual environment with system packages:
+```bash
+python3 -m venv env --system-site-packages
+source env/bin/activate
+```
+
+3. Install Python dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+4. Download the YOLOv8 model:
+```bash
+# Download yolov8n.onnx and place it in the project root directory
+```
+
+5. Run the application:
+```bash
+# For the Flask web interface:
+python3 app.py
+
+# For the detection service:
+python3 detect_capture.py
+```
