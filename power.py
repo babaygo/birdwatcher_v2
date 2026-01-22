@@ -100,5 +100,6 @@ def get_battery_datas():
             "power": round(ina.getPower_W(), 2),
             "online": True,
         }
-    except:
+    except Exception as e:
+        print(f"Impossible de récupérer les valeurs de la batterie : {e}")
         return default
