@@ -53,6 +53,22 @@
                         class="w-16 bg-gray-900 border border-gray-600 text-purple-400 text-center font-semibold py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
                     <span class="text-sm">Secondes</span>
                 </div>
+                <div class="w-full flex items-center space-x-2">
+                    <span class="text-sm">Résolution vidéo :</span>
+                    <select id="res-video"
+                        class="bg-gray-900 border border-gray-600 text-purple-400 text-sm font-semibold py-2 px-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors cursor-pointer">
+
+                        <option value="1920x1080" {% if config.res_video==[1920, 1080] %}selected{% endif %}>1080p (Full
+                            HD)</option>
+
+                        <option value="1280x720" {% if config.res_video==[1280, 720] or not config.res_video
+                            %}selected{% endif %}>720p (HD)</option>
+
+                        <option value="640x480" {% if config.res_video==[640, 480] %}selected{% endif %}>480p (SD)
+                        </option>
+
+                    </select>
+                </div>
             </div>
             <div class="flex items-center justify-between">
                 <div class="flex flex-col space-y-3">
@@ -133,6 +149,7 @@
 <script>
     const cleanupInput = document.getElementById('cleanup-days');
     const timeclipInput = document.getElementById('time-clip');
+    const resvideoInput = document.getElementById('res-video');
 
     cleanupInput.addEventListener('change', function () {
         let val = parseInt(this.value);
@@ -170,6 +187,27 @@
                 console.log("Configuration mise à jour :", data.time_clip);
             })
             .catch(err => console.error("Erreur de sauvegarde :", err));
+    });
+
+    resvideoInput.addEventListener('change', function () {
+        let val = this.value;
+        let resArray = val.split('x').map(Number);
+
+        fetch('/api/config/resvideo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ res_video: resArray })
+        })
+            .then(res => {
+                if (!res.ok) throw new Error("Erreur serveur");
+                return res.json();
+            })
+            .then(data => {
+                console.log("Résolution mise à jour avec succès :", data.res_video);
+            })
+            .catch(err => {
+                console.error("Erreur de sauvegarde :", err);
+            });
     });
 </script>
 {% endblock %}

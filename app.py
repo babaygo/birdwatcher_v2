@@ -21,7 +21,12 @@ app = Flask(__name__)
 VIDEO_DIR = os.path.join(os.path.dirname(__file__), "videos")
 DEFAULT_CLEANUP_DAYS = 7
 DEFAULT_TIMECLIP = 60
-DEFAULT_CONFIG = {"cleanup_days": DEFAULT_CLEANUP_DAYS, "time_clip": DEFAULT_TIMECLIP}
+DEFAULT_RESVIDEO = [1280, 720]
+DEFAULT_CONFIG = {
+    "cleanup_days": DEFAULT_CLEANUP_DAYS,
+    "time_clip": DEFAULT_TIMECLIP,
+    "res_video": DEFAULT_RESVIDEO,
+}
 CONFIG_FILE = "config.json"
 
 os.makedirs(VIDEO_DIR, exist_ok=True)
@@ -187,7 +192,6 @@ def set_cleanup_config():
         config = get_config()
         days = int(data.get("cleanup_days", DEFAULT_CLEANUP_DAYS))
         config["cleanup_days"] = max(1, min(99, days))
-        print("La config ", config)
 
         save_config(config)
         return {"status": "success", "cleanup_days": config["cleanup_days"]}
@@ -205,12 +209,28 @@ def set_timeclip_config():
         config = get_config()
         seconds = int(data.get("time_clip", DEFAULT_TIMECLIP))
         config["time_clip"] = max(1, min(120, seconds))
-        print("La config ", config)
 
         save_config(config)
         return {"status": "success", "time_clip": config["time_clip"]}
     except Exception as e:
         return {"status": "error", "message": f"Erreur update time_clip : {e}"}, 500
+
+
+@app.route("/api/config/resvideo", methods=["POST"])
+def set_res_video_config():
+    try:
+        data = request.get_json()
+        if not data:
+            return {"status": "error", "message": "No data received"}, 400
+
+        config = get_config()
+        new_res = data.get("res_video")
+        config["res_video"] = [int(new_res[0]), int(new_res[1])]
+
+        save_config(config)
+        return {"status": "success", "res_video": config["res_video"]}
+    except Exception as e:
+        return {"status": "error", "message": f"Erreur update res_video : {e}"}, 500
 
 
 @app.route("/api/system_stats")
@@ -219,7 +239,7 @@ def system_stats():
         "battery": get_battery_datas(),
         "temp": get_cpu_temp(),
         "disk": get_disk_info(),
-        "video_count": get_video_count_today()
+        "video_count": get_video_count_today(),
     }
 
 
